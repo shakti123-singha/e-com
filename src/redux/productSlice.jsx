@@ -1,18 +1,22 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  product: [], // <- the array lives here
+  products: [], // ✅ always start with an empty array
+  cart: [],
 };
 
 const productSlice = createSlice({
-  name: 'product',
+  name: "product",
   initialState,
   reducers: {
     setProducts: (state, action) => {
-      state.product = action.payload; // ✅ directly set the property, not the whole state
+      state.products = action.payload;
+    },
+    addToCart: (state, action) => {
+      state.cart.push(action.payload);
     },
   },
 });
 
-export const { setProducts } = productSlice.actions;
+export const { setProducts, addToCart } = productSlice.actions;
 export default productSlice.reducer;

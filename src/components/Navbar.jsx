@@ -29,7 +29,7 @@ function Navbar() {
                 {/* -------------------------------------------------- */}
                 <div className='flex items-center justify-center space-x-10 ty-4 text-sm font-bold'>
                      <Link to="/" className='hover:underline'>Home</Link>
-                       <Link to="/" className='hover:underline'>shop</Link>
+                       <Link to="/shop" className='hover:underline'>shop</Link>
                 
                    <Link to="/" className='hover:underline'>contact</Link>
                 
