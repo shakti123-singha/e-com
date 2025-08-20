@@ -1,23 +1,25 @@
-import './App.css'
-import {BrowserRouter,Routes,Route} from "react-router-dom"
-
-import Navbar from "./components/Navbar"
-import Footer from "./components/Footer"
-import Home from "./pages/Home"
-import Shope from './pages/Shope'
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Cart from "./components/checkout/Cart";
+import Checkout from "./pages/Checkout";
+import Home from "./pages/Home";
+import Shope from "./pages/Shope";
+import Footer from "./components/Footer";
 
 function App() {
-
-
   return (
-  <BrowserRouter>
-  <Navbar/>
-  <Routes>
-    <Route path="/" element={<Home />}></Route>
-     <Route path="/shop" element={<Shope />}></Route>
-  </Routes>
-  <Footer/>
-  </BrowserRouter>
-  )
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shope />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} /> {/* ✅ Add this */}
+      </Routes>
+      <Footer/>
+    </Router>
+  );
 }
-export default App
+
+export default App;
