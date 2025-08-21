@@ -1,16 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
-export default function PaymentsForm({
-  paymentMethod,
-  setPaymentMethod,
-  paymentDetails,
-  setPaymentDetails,
-  onBack,
-  onNext,
-}) {
+export default function PaymentsForm() {
+  const navigate = useNavigate();
+
+  const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
+  const [paymentDetails, setPaymentDetails] = useState({});
+
   const handleNext = () => {
     if (paymentMethod === "UPI") {
-      if (!paymentDetails.upiId || !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(paymentDetails.upiId)) {
+      if (
+        !paymentDetails.upiId ||
+        !/^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(paymentDetails.upiId)
+      ) {
         alert("Enter a valid UPI ID (e.g., username@bank).");
         return;
       }
@@ -34,18 +37,36 @@ export default function PaymentsForm({
         return;
       }
     }
-    onNext();
+
+    // Save to localStorage for Review step
+    localStorage.setItem(
+      "checkout.payment",
+      JSON.stringify({ method: paymentMethod, details: paymentDetails })
+    );
+    navigate("/checkout/review");
   };
 
-  const Field = ({ ...props }) => (
+  const Field = ({ className = "", ...props }) => (
     <input
       {...props}
-      className={`w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${props.className || ""}`}
+      className={`w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${className}`}
     />
   );
 
+  const cardVariants = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -30 },
+  };
+
   return (
-    <div>
+    <motion.div
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md mx-auto"
+    >
       <h2 className="text-lg font-semibold text-slate-800 mb-4">💳 Payment</h2>
 
       <select
@@ -62,17 +83,14 @@ export default function PaymentsForm({
         <option>Cash on Delivery</option>
       </select>
 
-      {/* dynamic fields */}
       {paymentMethod === "UPI" && (
-        <div className="space-y-2">
-          <Field
-            placeholder="UPI ID (e.g., username@bank)"
-            value={paymentDetails.upiId || ""}
-            onChange={(e) =>
-              setPaymentDetails({ ...paymentDetails, upiId: e.target.value })
-            }
-          />
-        </div>
+        <Field
+          placeholder="UPI ID (e.g., username@bank)"
+          value={paymentDetails.upiId || ""}
+          onChange={(e) =>
+            setPaymentDetails({ ...paymentDetails, upiId: e.target.value })
+          }
+        />
       )}
 
       {(paymentMethod === "Credit Card" || paymentMethod === "Debit Card") && (
@@ -118,24 +136,20 @@ export default function PaymentsForm({
         </div>
       )}
 
-      {paymentMethod === "Cash on Delivery" && (
-        <p className="text-sm text-slate-600">Pay in cash when the order arrives.</p>
-      )}
-
       <div className="flex justify-between mt-6">
         <button
-          onClick={onBack}
-          className="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-xl text-sm transition"
+          onClick={() => navigate("/checkout/address")}
+          className="px-4 py-2 bg-gray-300 rounded-lg"
         >
           ← Back
         </button>
         <button
           onClick={handleNext}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-xl text-sm transition"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
         >
-          Next: Review →
+          Next →
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

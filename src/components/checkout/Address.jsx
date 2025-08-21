@@ -1,13 +1,12 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
-export default function Address({
-  addresses,
-  setAddresses,
-  selectedAddress,
-  setSelectedAddress,
-  onBack,
-  onNext,
-}) {
+export default function Address() {
+  const navigate = useNavigate();
+
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
     name: "",
     street: "",
@@ -20,7 +19,12 @@ export default function Address({
     setNewAddress({ name: "", street: "", city: "", pincode: "" });
 
   const handleSave = () => {
-    if (!newAddress.name || !newAddress.street || !newAddress.city || !newAddress.pincode) {
+    if (
+      !newAddress.name ||
+      !newAddress.street ||
+      !newAddress.city ||
+      !newAddress.pincode
+    ) {
       alert("Please fill all address fields.");
       return;
     }
@@ -52,8 +56,29 @@ export default function Address({
     }
   };
 
+  const handleNext = () => {
+    if (!selectedAddress) {
+      alert("Please select an address.");
+      return;
+    }
+    localStorage.setItem("checkout.address", JSON.stringify(selectedAddress));
+    navigate("/checkout/payment");
+  };
+
+  const cardVariants = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -30 },
+  };
+
   return (
-    <div>
+    <motion.div
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md mx-auto"
+    >
       <h2 className="text-lg font-semibold text-slate-800 mb-4">📍 Shipping Address</h2>
 
       <div className="grid gap-2">
@@ -154,21 +179,25 @@ export default function Address({
 
       <div className="flex justify-between mt-6">
         <button
-          onClick={onBack}
+          onClick={() => navigate("/cart")} /* also works with /checkout/cart */
           className="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-xl text-sm transition"
         >
           ← Back
         </button>
         <button
-          onClick={() => {
-            if (!selectedAddress) return alert("Please select an address.");
-            onNext();
-          }}
+          onClick={handleNext}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm transition"
         >
           Next: Payment →
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
+
+
+
+
+
+
+

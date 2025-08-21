@@ -1,83 +1,123 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
-export default function ReviewOrder({
-  products,
-  total,
-  selectedAddress,
-  paymentMethod,
-  paymentDetails,
-  onBack,
-  onEditAddress,
-  onEditPayment,
-  onPlaceOrder,
-}) {
+export default function ReviewOrder() {
+  const navigate = useNavigate();
+
+  const products = useSelector((state) => state.cart.products) || [];
+  const total = useSelector((state) => state.cart.totalPrice) || 0;
+
+  const { address, payment } = useMemo(() => {
+    const a = localStorage.getItem("checkout.address");
+    const p = localStorage.getItem("checkout.payment");
+    return {
+      address: a ? JSON.parse(a) : null,
+      payment: p ? JSON.parse(p) : null,
+    };
+  }, []);
+
+  const cardVariants = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -30 },
+  };
+
+  const placeOrder = () => {
+    if (!address) return alert("Address missing. Please add address.");
+    if (!payment) return alert("Payment details missing. Please add payment.");
+    alert("Order placed successfully! ✅");
+    // Optional: localStorage cleanup
+    // localStorage.removeItem("checkout.address");
+    // localStorage.removeItem("checkout.payment");
+    navigate("/");
+  };
+
   return (
-    <div>
-      <h2 className="text-lg font-semibold text-slate-800 mb-4">📦 Review & Place Order</h2>
+    <motion.div
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      className="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md mx-auto"
+    >
+      <h2 className="text-xl font-bold mb-4 text-gray-800">📝 Review Order</h2>
 
-      <div className="space-y-2">
+      <div className="mb-4">
+        <h3 className="font-semibold">Cart Items:</h3>
         {products.map((item) => (
-          <div key={item.id} className="flex justify-between text-sm py-2 border-b border-slate-100">
-            <span className="text-slate-700">
-              {item.name} <span className="text-xs text-slate-500">(x{item.quantity})</span>
+          <div key={item.id} className="flex justify-between text-sm py-1">
+            <span>
+              {item.name} x{item.quantity}
             </span>
-            <span className="font-medium text-slate-800">₹{item.price * item.quantity}</span>
+            <span>₹{item.totalPrice}</span>
           </div>
         ))}
+        <div className="font-bold mt-2">Total: ₹{total}</div>
       </div>
 
-      <div className="flex items-center justify-between mt-3">
-        <span className="text-sm text-slate-600">Total</span>
-        <span className="text-lg font-bold text-emerald-700">₹{total}</span>
+      <div className="mb-4">
+        <h3 className="font-semibold">Shipping Address:</h3>
+        {address ? (
+          <>
+            <p>
+              {address.name}, {address.street}, {address.city},{" "}
+              {address.pincode}
+            </p>
+            <button
+              onClick={() => navigate("/checkout/address")}
+              className="text-sm text-blue-600 mt-1 underline"
+            >
+              Edit
+            </button>
+          </>
+        ) : (
+          <button
+            className="text-sm text-blue-600 underline"
+            onClick={() => navigate("/checkout/address")}
+          >
+            Add Address
+          </button>
+        )}
       </div>
 
-      <div className="mt-5 grid gap-3">
-        <div className="p-3 border border-slate-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-slate-700">Shipping Address</h3>
-            <button onClick={onEditAddress} className="text-blue-600 text-sm hover:underline">
-              Change
+      <div className="mb-4">
+        <h3 className="font-semibold">Payment Method:</h3>
+        {payment ? (
+          <>
+            <p>{payment.method}</p>
+            <button
+              onClick={() => navigate("/checkout/payment")}
+              className="text-sm text-blue-600 mt-1 underline"
+            >
+              Edit
             </button>
-          </div>
-          <p className="text-sm text-slate-700 mt-1">
-            {selectedAddress
-              ? `${selectedAddress.name}, ${selectedAddress.street}, ${selectedAddress.city} - ${selectedAddress.pincode}`
-              : "No address selected"}
-          </p>
-        </div>
-
-        <div className="p-3 border border-slate-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-slate-700">Payment</h3>
-            <button onClick={onEditPayment} className="text-blue-600 text-sm hover:underline">
-              Change
-            </button>
-          </div>
-          <p className="text-sm text-slate-700 mt-1">
-            {paymentMethod}
-            {paymentMethod === "UPI" && paymentDetails?.upiId ? ` • ${paymentDetails.upiId}` : ""}
-            {(paymentMethod === "Credit Card" || paymentMethod === "Debit Card") &&
-              paymentDetails?.cardNumber
-              ? ` • **** **** **** ${String(paymentDetails.cardNumber).slice(-4)}`
-              : ""}
-          </p>
-        </div>
+          </>
+        ) : (
+          <button
+            className="text-sm text-blue-600 underline"
+            onClick={() => navigate("/checkout/payment")}
+          >
+            Add Payment
+          </button>
+        )}
       </div>
 
       <div className="flex justify-between mt-6">
         <button
-          onClick={onBack}
-          className="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-xl text-sm transition"
+          onClick={() => navigate("/checkout/payment")}
+          className="px-4 py-2 bg-gray-300 rounded-lg"
         >
           ← Back
         </button>
         <button
-          onClick={onPlaceOrder}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl text-sm shadow-md transition"
+          onClick={placeOrder}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
         >
-          ✅ Place Order
+          Place Order ✅
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
