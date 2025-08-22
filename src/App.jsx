@@ -9,6 +9,7 @@ import Checkout from "./pages/Checkout"; // parent checkout flow
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import Signup from "./components/auth/SignUp";
+import CategoryPage from "./pages/Categorypage";
 
 function App() {
   return (
@@ -21,6 +22,8 @@ function App() {
          <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
          <Route path="/signup" element={<Signup />} />
+             <Route path="/category/:title" element={<CategoryPage />} />
+         
 
         {/* Simple Cart Page (direct view) */}
         <Route path="/cart" element={<Cart />} />
