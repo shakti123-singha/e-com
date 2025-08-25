@@ -13,6 +13,7 @@ export default function Address() {
     city: "",
     district: "",
     state: "",
+    country: "",
     pincode: "",
   });
   const [editIndex, setEditIndex] = useState(null);
@@ -24,14 +25,19 @@ export default function Address() {
       city: "",
       district: "",
       state: "",
+      country: "",
       pincode: "",
     });
 
-  // ✅ Auto-fill city, district, state from pincode
+  // ✅ Auto-fill city, district, state, country from pincode
   const fetchAddressFromPincode = async (pincode) => {
-    if (pincode.length === 6) {
-      try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    if (!pincode) return;
+    const pin = pincode.trim(); // Remove extra spaces
+
+    try {
+      // India 6-digit pincode
+      if (/^\d{6}$/.test(pin)) {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
         const data = await res.json();
         if (data[0].Status === "Success") {
           const postOffice = data[0].PostOffice[0];
@@ -40,13 +46,38 @@ export default function Address() {
             city: postOffice.Block || postOffice.Name || "",
             district: postOffice.District || "",
             state: postOffice.State || "",
+            country: "India",
           }));
         } else {
-          alert("❌ Invalid Pincode");
+          alert("❌ Invalid Indian Pincode");
         }
-      } catch (err) {
-        console.error("Pincode fetch error:", err);
+      } else {
+        // Other countries → try multiple country codes
+        const countries = ["us", "gb", "ca", "de", "fr", "au", "nz", "nl", "es"];
+        let found = false;
+
+        for (let code of countries) {
+          const res = await fetch(`https://api.zippopotam.us/${code}/${pin}`);
+          if (res.ok) {
+            const data = await res.json();
+            const place = data.places[0];
+            setNewAddress((prev) => ({
+              ...prev,
+              city: place["place name"] || "",
+              district: place["state"] || place["state abbreviation"] || "",
+              state: place["state"] || place["state abbreviation"] || "",
+              country: data.country || code.toUpperCase(),
+            }));
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) alert("❌ Could not fetch address. Check pincode or country.");
       }
+    } catch (err) {
+      console.error("Pincode fetch error:", err);
+      alert("❌ Could not fetch address. Check pincode.");
     }
   };
 
@@ -57,6 +88,7 @@ export default function Address() {
       !newAddress.city ||
       !newAddress.district ||
       !newAddress.state ||
+      !newAddress.country ||
       !newAddress.pincode
     ) {
       alert("Please fill all address fields.");
@@ -105,6 +137,14 @@ export default function Address() {
     exit: { opacity: 0, y: -30 },
   };
 
+  const handlePincodeChange = (value) => {
+    const pin = value.trim();
+    setNewAddress({ ...newAddress, pincode: pin });
+    if (/^\d{6}$/.test(pin) || /^\d{5}$/.test(pin) || /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(pin) || /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/i.test(pin)) {
+      fetchAddressFromPincode(pin);
+    }
+  };
+
   return (
     <motion.div
       variants={cardVariants}
@@ -113,9 +153,7 @@ export default function Address() {
       exit="exit"
       className="bg-white shadow-xl rounded-2xl p-6 w-full max-w-md mx-auto"
     >
-      <h2 className="text-lg font-semibold text-slate-800 mb-4">
-        📍 Shipping Address
-      </h2>
+      <h2 className="text-lg font-semibold text-slate-800 mb-4">📍 Shipping Address</h2>
 
       <div className="grid gap-2">
         <input
@@ -123,18 +161,14 @@ export default function Address() {
           placeholder="Full Name"
           className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           value={newAddress.name}
-          onChange={(e) =>
-            setNewAddress({ ...newAddress, name: e.target.value })
-          }
+          onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
         />
         <input
           type="text"
           placeholder="Street Address"
           className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
           value={newAddress.street}
-          onChange={(e) =>
-            setNewAddress({ ...newAddress, street: e.target.value })
-          }
+          onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
         />
 
         <div className="grid grid-cols-2 gap-2">
@@ -150,11 +184,7 @@ export default function Address() {
             placeholder="Pincode"
             className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             value={newAddress.pincode}
-            onChange={(e) => {
-              const pin = e.target.value;
-              setNewAddress({ ...newAddress, pincode: pin });
-              fetchAddressFromPincode(pin); // ✅ auto fetch city/district/state
-            }}
+            onChange={(e) => handlePincodeChange(e.target.value)}
           />
         </div>
 
@@ -174,6 +204,14 @@ export default function Address() {
             readOnly
           />
         </div>
+
+        <input
+          type="text"
+          placeholder="Country"
+          className="w-full border border-slate-200 rounded-lg p-2 text-sm bg-slate-100 cursor-not-allowed"
+          value={newAddress.country}
+          readOnly
+        />
 
         <div className="flex gap-2 mt-1">
           <button
@@ -198,9 +236,7 @@ export default function Address() {
 
       {addresses.length > 0 && (
         <div className="mt-5">
-          <h3 className="font-semibold text-sm text-slate-700 mb-2">
-            Saved Addresses
-          </h3>
+          <h3 className="font-semibold text-sm text-slate-700 mb-2">Saved Addresses</h3>
           <div className="space-y-2">
             {addresses.map((addr, idx) => {
               const isSelected = selectedAddress === addr;
@@ -208,36 +244,16 @@ export default function Address() {
                 <div
                   key={idx}
                   onClick={() => setSelectedAddress(addr)}
-                  className={`p-3 border rounded-lg text-sm flex items-center justify-between cursor-pointer transition
-                    ${
-                      isSelected
-                        ? "border-emerald-600 bg-emerald-50"
-                        : "border-slate-200 hover:bg-slate-50"
-                    }`}
+                  className={`p-3 border rounded-lg text-sm flex items-center justify-between cursor-pointer transition ${
+                    isSelected ? "border-emerald-600 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"
+                  }`}
                 >
                   <div className="text-slate-700">
-                    {addr.name}, {addr.street}, {addr.city}, {addr.district},{" "}
-                    {addr.state} - {addr.pincode}
+                    {addr.name}, {addr.street}, {addr.city}, {addr.district}, {addr.state}, {addr.country} - {addr.pincode}
                   </div>
                   <div className="flex items-center gap-3">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(idx);
-                      }}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(idx);
-                      }}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); handleEdit(idx); }} className="text-blue-600 hover:underline">Edit</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDelete(idx); }} className="text-red-600 hover:underline">Delete</button>
                   </div>
                 </div>
               );
@@ -247,18 +263,8 @@ export default function Address() {
       )}
 
       <div className="flex justify-between mt-6">
-        <button
-          onClick={() => navigate("/cart")}
-          className="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-xl text-sm transition"
-        >
-          ← Back
-        </button>
-        <button
-          onClick={handleNext}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm transition"
-        >
-          Next: Payment →
-        </button>
+        <button onClick={() => navigate("/cart")} className="bg-slate-400 hover:bg-slate-500 text-white px-5 py-2 rounded-xl text-sm transition">← Back</button>
+        <button onClick={handleNext} className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-sm transition">Next: Payment →</button>
       </div>
     </motion.div>
   );
